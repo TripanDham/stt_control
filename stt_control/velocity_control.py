@@ -31,7 +31,7 @@ class DrivePublisherNode(hm.HelloNode):
         self.joint_states_subscriber = self.create_subscription(JointState, '/stretch/joint_states', qos_profile=1, callback=self.joint_states_callback, callback_group=self.callback_group)
         self.robot = rb.Robot()
 
-        self.timer = self.create_timer(0.5, self.timer_callback, callback_group = self.callback_group)  # Publish every 0.01 seconds
+        self.timer = self.create_timer(0.01, self.timer_callback, callback_group = self.callback_group)  # Publish every 0.01 seconds
         # self.joint_sub = self.create_subscription(JointState, '/stretch/joint_states', self.joint_callback, 10)
 
         self.z_lower_lim = 0.54
@@ -87,8 +87,6 @@ class DrivePublisherNode(hm.HelloNode):
         self.lift = 0
         self.arm = 0
 
-        time.sleep(1)
-
         x = self.base_pose[0]
         y = self.base_pose[1]
         
@@ -96,7 +94,7 @@ class DrivePublisherNode(hm.HelloNode):
         self.goal_set = np.array([[1-0.1, 2+0.1], [1-0.1, 2+0.1], [0.8-0.01, 0.8+0.01], [0.1-0.005, 0.1+0.005]])
         self.t_final = 20
 
-        self.create_tube(self.start_set, self.goal_set, self.t_final)
+        # self.create_tube(self.start_set, self.goal_set, self.t_final)
 
         self.ulim = 0.3
         self.rlim = 0.4
@@ -226,8 +224,9 @@ class DrivePublisherNode(hm.HelloNode):
         if self.count < len(velocity_arr):
             vel = velocity_arr[self.count]
         else:
+            self.count = 0
             vel = 0.0
-        speed = {'joint_arm_l0': vel, 'joint_arm_l1': vel, 'joint_arm_l2': vel, 'joint_arm_l3': vel}
+        speed = {'joint_arm_l0': vel, 'joint_arm_l1': vel, 'joint_arm_l2': vel, 'joint_arm_l3': vel, 'joint_lift': vel}
         self.count += 1
 
         point = JointTrajectoryPoint()

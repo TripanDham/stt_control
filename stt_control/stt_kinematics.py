@@ -36,7 +36,7 @@ class DrivePublisherNode(hm.HelloNode):
 
         self.joint_states_subscriber = self.create_subscription(JointState, '/stretch/joint_states', qos_profile=1, callback=self.joint_states_callback, callback_group=self.callback_group)
 
-        self.base_pub = self.create_publisher(Twist, '/stretch/cmd_vel', 10)
+        self.base_pub = self.create_publisher(Twist, '/stretch/cmd_vel', 10, callback_group=self.callback_group)
 
         # self.joint_sub = self.create_subscription(JointState, '/stretch/joint_states', self.joint_callback, 10)
 
@@ -70,7 +70,7 @@ class DrivePublisherNode(hm.HelloNode):
         self.create_tube(self.start_set, self.goal_set, self.t_final)
         
         self.start_time = round(self.get_clock().now().nanoseconds/1e9, 4)
-        self.timer = self.create_timer(0.01, self.timer_callback, callback_group = self.callback_group)  # Publish every 0.01 seconds
+        self.timer = self.create_timer(0.1, self.timer_callback, callback_group = self.callback_group)  # Publish every 0.01 seconds
 
         self.ulim = 0.3
         self.rlim = 0.4
@@ -205,6 +205,13 @@ class DrivePublisherNode(hm.HelloNode):
         self.theta_arr.append(theta)
         self.rhoo_arr.append(rhoo)
 
+        self.ea_arr.append(ea)
+        self.el_arr.append(el)
+        self.arm_vel_arr.append(v_arm)
+        self.lift_vel_arr.append(v_lift)
+        self.rhoa_arr.append(rho_arm)
+        self.rhol_arr.append(rho_lift)
+
         self.ref_lower_arr.append(ref_lower)
         self.ref_upper_arr.append(ref_upper)
 
@@ -328,7 +335,7 @@ class DrivePublisherNode(hm.HelloNode):
         self.trajectory_client.send_goal_async(trajectory_goal)
 
     def plot(self):
-        fig, axs = plt.subplots(3, 2, figsize=(12, 10))
+        fig, axs = plt.subplots(3, 3, figsize=(12, 10))
 
         # Plot 1: Path of x and y, along with xref and yref
         axs[0, 0].plot(self.x_arr, self.y_arr, label='Path (x, y)', color='b')
@@ -376,12 +383,33 @@ class DrivePublisherNode(hm.HelloNode):
         axs[2, 0].set_ylabel('Steering angle (rad)')
         axs[2, 0].legend()
 
-        # Hide the unused subplot
-        axs[2, 1].plot(self.theta_arr, label='Steering angle', color='red')
-        axs[2, 1].set_title('Theta vs Time')
+        axs[1, 2].plot(self.ea_arr, label='ea', color='orange')
+        axs[1, 2].plot(self.rhoa_arr, label = 'funnel upper')
+        axs[1, 2].plot([-1*x for x in self.rhoa_arr], label = 'funnel lower')
+        axs[1, 2].set_title('ea vs Time')
+        axs[1, 2].set_xlabel('Time')
+        axs[1, 2].set_ylabel('ea')
+        axs[1, 2].legend()
+
+        axs[2, 2].plot(self.el_arr, label='el', color='orange')
+        axs[2, 2].plot(self.rhol_arr, label = 'funnel upper')
+        axs[2, 2].plot([-1*x for x in self.rhol_arr], label = 'funnel lower')
+        axs[2, 2].set_title('el vs Time')
+        axs[2, 2].set_xlabel('Time')
+        axs[2, 2].set_ylabel('el')
+        axs[2, 2].legend()
+
+        axs[0, 2].plot(self.arm_vel_arr, label='arm_vel', color='purple')
+        axs[0, 2].set_title('arm_vel vs Time')
+        axs[0, 2].set_xlabel('Time')
+        axs[0, 2].set_ylabel('arm_vel')
+        axs[0, 2].legend()
+
+        axs[2, 1].plot(self.lift_vel_arr, label='lift_vel', color='purple')
+        axs[2, 1].set_title('lift_vel vs Time')
         axs[2, 1].set_xlabel('Time')
-        axs[2, 1].set_ylabel('Theta')
-        axs[2, 1].legend()        
+        axs[2, 1].set_ylabel('lift_vel')
+        axs[2, 1].legend()
         
         plt.tight_layout()
         plt.show()
