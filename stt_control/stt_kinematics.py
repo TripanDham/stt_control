@@ -38,6 +38,8 @@ class DrivePublisherNode(hm.HelloNode):
 
         self.base_pub = self.create_publisher(Twist, '/b/stretch/cmd_vel', 10, callback_group=self.callback_group)
 
+        
+
         # self.joint_sub = self.create_subscription(JointState, '/stretch/joint_states', self.joint_callback, 10)
 
         self.z_lower_lim = 0.54
@@ -58,8 +60,9 @@ class DrivePublisherNode(hm.HelloNode):
         
         self.get_logger().info(f"lift={self.lift_pos}, arm={self.arm_pos}")
 
-        x = self.base_pose[0]
-        y = self.base_pose[1]
+        self.localize()
+        x = self.pose[0]
+        y = self.pose[1]
 
         self.start_set = np.array([[x-0.1,x+0.1], [y-0.1,y+0.1], [self.lift_pos-0.05, self.lift_pos+0.05], [self.arm_pos-0.005, self.arm_pos+0.005]])
         self.goal_set = np.array([[1-0.1, 1+0.1], [0.2-0.1, 0.2+0.1], [0.8-0.05, 0.8+0.05], [0.1-0.005, 0.1+0.005]])
@@ -130,18 +133,19 @@ class DrivePublisherNode(hm.HelloNode):
     def joint_states_callback(self, joint_states):
         self.flag = True
         self.joint_states = joint_states
-        self.lift_pos = joint_states.position[joint_states.name.index('joint_lift')]
-        self.arm_pos = joint_states.position[joint_states.name.index('joint_arm_l0')]
+        self.lift_pos = joint_states.position[joint_states.name.index('b_joint_lift')]
+        self.arm_pos = joint_states.position[joint_states.name.index('b_joint_arm_l0')]
 
 
-    def timer_callback(self):
+    def localize(self):
         x_base = self.base_pose[0]
         y_base = self.base_pose[1]
         theta = self.base_pose[2]
 
         base_arm_transform = TransformStamped()
+        
         try:
-            base_arm_transform = self.tf_buffer.lookup_transform('link_aruco_top_wrist', 'base_link', rclpy.time.Time())
+            base_arm_transform = self.tf2_buffer.lookup_transform('b_link_aruco_top_wrist', 'b_base_link', rclpy.time.Time())
             delX = base_arm_transform.transform.translation.x
             delY = base_arm_transform.transform.translation.y
             delZ = base_arm_transform.transform.translation.z
@@ -155,7 +159,17 @@ class DrivePublisherNode(hm.HelloNode):
         y = y_base + delY
         z = delZ
 
-        self.pose = np.array([x_base + delX, y_base + delY, delZ])
+        self.pose = np.array([x_base + delX, y_base + delY, delZ, theta])
+        return self.pose
+
+    def timer_callback(self):
+        
+        self.localize()
+
+        x = self.pose[0]
+        y = self.pose[1]
+        z = self.pose[2]
+        theta = self.pose[3]
 
         t = round(self.get_clock().now().nanoseconds/1e9, 4) - self.start_time
         ref_lower, ref_upper = self.get_ref_pose(t)
@@ -236,6 +250,19 @@ class DrivePublisherNode(hm.HelloNode):
         trajectory_goal.trajectory.joint_names = joint_names
         trajectory_goal.trajectory.points = [point]
         self.trajectory_client.send_goal_async(trajectory_goal)
+
+        if self.t_final - t < 2:
+            point = JointTrajectoryPoint()
+            point.time_from_start = Duration(seconds=0.0).to_msg()
+
+            point.positions = [0.2]
+            joint_names = ['joint_wrist_yaw']
+
+            trajectory_goal = FollowJointTrajectory.Goal()
+            trajectory_goal.goal_time_tolerance = Duration(seconds=1.0).to_msg()
+            trajectory_goal.trajectory.joint_names = joint_names
+            trajectory_goal.trajectory.points = [point]
+            self.trajectory_client.send_goal_async(trajectory_goal)
 
         self.get_logger().info(f"cmd_vel={cmd_vel}, steer={steer}, vlift = {v_lift}, varm = {v_arm}")
         # self.get_logger().info(f"ed={ed}, eo={eo}")
