@@ -32,11 +32,11 @@ class DrivePublisherNode(hm.HelloNode):
         self.logger = self.get_logger()
         self.callback_group = ReentrantCallbackGroup()
         
-        self.odom_subscriber = self.create_subscription(Odometry, '/odom', self.odom_callback, 1, callback_group=self.callback_group)
+        self.odom_subscriber = self.create_subscription(Odometry, '/a/odom', self.odom_callback, 1, callback_group=self.callback_group)
 
-        self.joint_states_subscriber = self.create_subscription(JointState, '/stretch/joint_states', qos_profile=1, callback=self.joint_states_callback, callback_group=self.callback_group)
+        self.joint_states_subscriber = self.create_subscription(JointState, '/a/stretch/joint_states', qos_profile=1, callback=self.joint_states_callback, callback_group=self.callback_group)
 
-        self.base_pub = self.create_publisher(Twist, '/stretch/cmd_vel', 10, callback_group=self.callback_group)
+        self.base_pub = self.create_publisher(Twist, '/a/stretch/cmd_vel', 10, callback_group=self.callback_group)
 
         # self.joint_sub = self.create_subscription(JointState, '/stretch/joint_states', self.joint_callback, 10)
 

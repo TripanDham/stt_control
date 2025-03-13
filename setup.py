@@ -22,6 +22,7 @@ setup(
         'console_scripts': [
             "stt_kinematics = stt_control.stt_kinematics:main" ,
             "path_planning = stt_control.path_planning:main",
+            "tubes = stt_control.tubes:main",
             "velocity_control = stt_control.velocity_control:main"
         ],
     },
