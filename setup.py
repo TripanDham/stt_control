@@ -20,10 +20,11 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "stt_kinematics = stt_control.stt_kinematics:main" ,
+            "stt_kinematics = stt_control.stt_kinematics:main", 
             "path_planning = stt_control.path_planning:main",
             "tubes = stt_control.tubes:main",
-            "velocity_control = stt_control.velocity_control:main"
+            "velocity_control = stt_control.velocity_control:main",
+            "global_localiser = stt_control.global_localiser:main"
         ],
     },
 )
